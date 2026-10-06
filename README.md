@@ -19,6 +19,12 @@ npm run dev
 
 Then open [http://localhost:3000](http://localhost:3000).
 
+### Supabase setup
+
+1. Copy `.env.example` to `.env.local` and fill in the URL and publishable key from the Supabase dashboard (Project Settings → API Keys). `.env.local` is gitignored.
+2. Database schema lives in `supabase/migrations/`. To apply it, paste the migration into the dashboard's SQL Editor and run it once.
+3. Check the connection: with `npm run dev` running, open [http://localhost:3000/api/health](http://localhost:3000/api/health). You should see `{"ok":true,"listingCount":0}`.
+
 ## Scripts
 
 | Command                | Description                      |
