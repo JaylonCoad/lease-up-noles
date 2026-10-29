@@ -8,7 +8,7 @@ export type Listing = {
   amenities: string[];
   lat: number;
   lng: number;
-  distance_miles: number | null;
+  distance_miles: number;
   created_at: string;
 };
 

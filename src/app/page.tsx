@@ -16,7 +16,8 @@ export default async function Home(props: PageProps<"/">) {
           Off-campus apartments in Tallahassee
         </h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Prices are monthly rent per person. Distances are straight-line to FSU campus.
+          Prices are monthly rent per person. Distances are straight-line to Westcott Fountain on
+          FSU campus.
         </p>
       </header>
 

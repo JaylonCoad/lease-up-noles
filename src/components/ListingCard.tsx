@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type { Listing } from "@/types/listing";
 
 const priceFormat = new Intl.NumberFormat("en-US", {
@@ -13,9 +15,17 @@ function bedroomLabel(bedrooms: number): string {
 
 export function ListingCard({ listing }: { listing: Listing }) {
   return (
-    <article className="flex h-full flex-col rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+    <article className="relative flex h-full flex-col rounded-lg border border-zinc-200 bg-white p-4 shadow-sm transition-colors focus-within:ring-2 focus-within:ring-zinc-500 hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-600">
       <div className="flex items-start justify-between gap-3">
-        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">{listing.name}</h2>
+        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+          {/* The ::after overlay stretches this link over the whole card. */}
+          <Link
+            href={`/listings/${listing.id}`}
+            className="after:absolute after:inset-0 after:rounded-lg focus:outline-none"
+          >
+            {listing.name}
+          </Link>
+        </h2>
         <p className="shrink-0 text-right">
           <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
             {priceFormat.format(listing.price)}
@@ -29,9 +39,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
         <span className="mx-2 text-zinc-400" aria-hidden>
           ·
         </span>
-        {listing.distance_miles === null
-          ? "Distance unavailable"
-          : `${listing.distance_miles.toFixed(1)} mi to campus`}
+        {`${listing.distance_miles.toFixed(1)} mi to campus`}
       </p>
       {listing.amenities.length > 0 && (
         <ul className="mt-auto flex flex-wrap gap-1.5 pt-3" aria-label="Amenities">
