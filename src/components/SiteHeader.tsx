@@ -11,16 +11,16 @@ export async function SiteHeader() {
 
   return (
     <header className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
-      <Link href="/" className="font-semibold">
+      <Link href="/" className="font-semibold whitespace-nowrap">
         Lease Up Noles
       </Link>
 
       <nav className="flex items-center gap-4 text-sm">
         {email ? (
           <>
-            <span className="text-zinc-600 dark:text-zinc-400">{email}</span>
+            <span className="hidden text-zinc-600 sm:inline dark:text-zinc-400">{email}</span>
             <form action={logOut}>
-              <button type="submit" className="underline">
+              <button type="submit" className="whitespace-nowrap underline">
                 Log out
               </button>
             </form>
