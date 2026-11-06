@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import type { Listing } from "@/types/listing";
+import type { RatedListing } from "@/types/listing";
 
 const priceFormat = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -13,7 +13,7 @@ function bedroomLabel(bedrooms: number): string {
   return `${bedrooms} bed${bedrooms === 1 ? "" : "s"}`;
 }
 
-export function ListingCard({ listing }: { listing: Listing }) {
+export function ListingCard({ listing }: { listing: RatedListing }) {
   return (
     <article className="relative flex h-full flex-col rounded-lg border border-zinc-200 bg-white p-4 shadow-sm transition-colors focus-within:ring-2 focus-within:ring-zinc-500 hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-600">
       <div className="flex items-start justify-between gap-3">
@@ -40,6 +40,11 @@ export function ListingCard({ listing }: { listing: Listing }) {
           ·
         </span>
         {`${listing.distance_miles.toFixed(1)} mi to campus`}
+      </p>
+      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        {listing.average_rating === null
+          ? "No reviews yet"
+          : `★ ${listing.average_rating.toFixed(1)} (${listing.review_count} ${listing.review_count === 1 ? "review" : "reviews"})`}
       </p>
       {listing.amenities.length > 0 && (
         <ul className="mt-auto flex flex-wrap gap-1.5 pt-3" aria-label="Amenities">

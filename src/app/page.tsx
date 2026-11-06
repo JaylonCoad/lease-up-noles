@@ -1,12 +1,15 @@
 import { ListingCard } from "@/components/ListingCard";
 import { ListingFilters } from "@/components/ListingFilters";
 import { hasActiveFilters, parseListingFilters } from "@/lib/listing-filters";
+import { parseListingSort } from "@/lib/listing-sort";
 import { getListings } from "@/lib/listings";
 
-// Browse/search page (FR1): every listing, narrowed by the filters in the URL.
+// Browse/search page (FR1, FR2): every listing, narrowed and ordered by the URL's search params.
 export default async function Home(props: PageProps<"/">) {
-  const filters = parseListingFilters(await props.searchParams);
-  const listings = await getListings(filters);
+  const searchParams = await props.searchParams;
+  const filters = parseListingFilters(searchParams);
+  const sort = parseListingSort(searchParams.sort);
+  const listings = await getListings(filters, sort);
   const filtered = hasActiveFilters(filters);
 
   return (
@@ -21,7 +24,7 @@ export default async function Home(props: PageProps<"/">) {
         </p>
       </header>
 
-      <ListingFilters filters={filters} />
+      <ListingFilters filters={filters} sort={sort} />
 
       <p className="mt-6 mb-3 text-sm text-zinc-600 dark:text-zinc-400" aria-live="polite">
         {listings.length} {listings.length === 1 ? "listing" : "listings"}
