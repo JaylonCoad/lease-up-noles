@@ -114,12 +114,8 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
             </Link>{" "}
             to review this place.
           </p>
-        ) : hasReviewed ? (
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            You have already reviewed this listing.
-          </p>
         ) : (
-          <ReviewForm listingId={listing.id} />
+          <ReviewForm listingId={listing.id} alreadyReviewed={hasReviewed} />
         )}
       </section>
     </main>

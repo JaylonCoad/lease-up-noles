@@ -9,8 +9,25 @@ const STAR_VALUES = Array.from({ length: MAX_RATING - MIN_RATING + 1 }, (_, i) =
 
 // Form for a logged-in student to review one listing. The server action does the real
 // validation; the input limits here just save a round trip.
-export function ReviewForm({ listingId }: { listingId: string }) {
+export function ReviewForm({
+  listingId,
+  alreadyReviewed,
+}: {
+  listingId: string;
+  alreadyReviewed: boolean;
+}) {
   const [state, formAction, pending] = useActionState(submitReview, undefined);
+
+  // After a successful post the page re-renders with alreadyReviewed = true. This component stays
+  // mounted, so the thank-you below still shows instead of being replaced.
+  if (state?.message) return <p className="mt-2 text-sm text-green-700">{state.message}</p>;
+  if (alreadyReviewed) {
+    return (
+      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+        You have already reviewed this listing.
+      </p>
+    );
+  }
 
   return (
     <form action={formAction} className="mt-3 flex flex-col gap-4">
@@ -45,7 +62,6 @@ export function ReviewForm({ listingId }: { listingId: string }) {
           {state.error}
         </p>
       )}
-      {state?.message && <p className="text-sm text-green-700">{state.message}</p>}
 
       <button
         type="submit"
