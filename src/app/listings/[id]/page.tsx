@@ -1,8 +1,10 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ReviewForm } from "@/components/ReviewForm";
 import { createClient } from "@/lib/supabase/server";
 
-// One row from the listings table 
+// One row from the listings table
 type Listing = {
   id: string;
   name: string;
@@ -25,24 +27,31 @@ function bedroomLabel(bedrooms: number): string {
 }
 
 // GET /listings/[id]: shows every detail for one listing.
-export default async function ListingDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("listings")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
+  const { data, error } = await supabase.from("listings").select("*").eq("id", id).maybeSingle();
 
   // Bad id or no matching listing -> show the 404 page.
   if (error || !data) notFound();
 
   const listing = { ...data, price: Number(data.price) } as Listing;
+
+  // Only logged-in users get the review form, and only if they haven't reviewed this listing yet.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  let hasReviewed = false;
+  if (user) {
+    const { data: existing } = await supabase
+      .from("reviews")
+      .select("id")
+      .eq("listing_id", id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    hasReviewed = existing !== null;
+  }
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-10">
@@ -89,6 +98,28 @@ export default async function ListingDetailPage({
           </ul>
         ) : (
           <p className="mt-2 text-sm text-zinc-500">No amenities listed.</p>
+        )}
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-lg font-semibold">Leave a review</h2>
+        {!user ? (
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            <Link href="/login" className="underline">
+              Log in
+            </Link>{" "}
+            or{" "}
+            <Link href="/signup" className="underline">
+              sign up
+            </Link>{" "}
+            to review this place.
+          </p>
+        ) : hasReviewed ? (
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            You have already reviewed this listing.
+          </p>
+        ) : (
+          <ReviewForm listingId={listing.id} />
         )}
       </section>
     </main>
