@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { submitReview } from "@/app/listings/[id]/actions";
 import { MAX_COMMENT_LENGTH, MAX_RATING, MIN_RATING } from "@/lib/review-validation";
@@ -17,6 +17,10 @@ export function ReviewForm({
   alreadyReviewed: boolean;
 }) {
   const [state, formAction, pending] = useActionState(submitReview, undefined);
+  // Live length for the counter. There is no maxLength on the box on purpose: it would silently
+  // cut off pasted text. The server rejects anything over the limit and says so.
+  const [commentLength, setCommentLength] = useState(0);
+  const overLimit = commentLength > MAX_COMMENT_LENGTH;
 
   // After a successful post the page re-renders with alreadyReviewed = true. This component stays
   // mounted, so the thank-you below still shows instead of being replaced.
@@ -51,10 +55,12 @@ export function ReviewForm({
           name="comment"
           required
           rows={4}
-          maxLength={MAX_COMMENT_LENGTH}
+          onChange={(event) => setCommentLength(event.target.value.length)}
           className="w-full rounded-md border border-zinc-300 px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
         />
-        <span className="text-xs text-zinc-500">Up to {MAX_COMMENT_LENGTH} characters.</span>
+        <span className={`text-xs ${overLimit ? "text-red-600" : "text-zinc-500"}`}>
+          {commentLength} / {MAX_COMMENT_LENGTH} characters
+        </span>
       </label>
 
       {state?.error && (
