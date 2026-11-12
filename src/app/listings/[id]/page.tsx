@@ -6,7 +6,36 @@ import { ReviewList } from "@/components/ReviewList";
 import { averageRating } from "@/lib/listing-sort";
 import { reviewCountLabel } from "@/lib/review-display";
 import { createClient } from "@/lib/supabase/server";
-import type { Review } from "@/types/review";
+import type { Review, ReviewWithAuthor } from "@/types/review";
+
+type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+// Adds each review's author name (FR4.2). Names are an extra, so if they can't be loaded the
+// reviews still show, just without an author line.
+async function withReviewerNames(
+  supabase: SupabaseClient,
+  reviews: Review[],
+): Promise<ReviewWithAuthor[]> {
+  if (reviews.length === 0) return reviews;
+
+  const userIds = [...new Set(reviews.map((review) => review.user_id))];
+  const { data, error } = await supabase.rpc("get_reviewer_names", { user_ids: userIds });
+  if (error) {
+    console.error(`Could not load reviewer names: ${error.message}`);
+    return reviews;
+  }
+
+  const names = new Map<string, string | null>(
+    (data ?? []).map((row: { id: string; display_name: string | null }) => [
+      row.id,
+      row.display_name,
+    ]),
+  );
+  return reviews.map((review) => ({
+    ...review,
+    reviewer_name: names.get(review.user_id) ?? null,
+  }));
+}
 
 // One row from the listings table
 type Listing = {
@@ -51,7 +80,9 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     .eq("listing_id", id)
     .order("created_at", { ascending: false });
   if (reviewsError) console.error(`Could not load reviews: ${reviewsError.message}`);
-  const reviews: Review[] | null = reviewsError ? null : (reviewRows ?? []);
+  const reviews: ReviewWithAuthor[] | null = reviewsError
+    ? null
+    : await withReviewerNames(supabase, reviewRows ?? []);
 
   // Recomputed from the reviews on every request, so a new review moves the average right away.
   const average = reviews ? averageRating(reviews.map((review) => review.rating)) : null;

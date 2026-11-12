@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import { formatReviewDate, ratingStars, reviewCountLabel } from "./review-display";
+import { formatReviewDate, ratingStars, reviewCountLabel, reviewerLabel } from "./review-display";
+
+describe("reviewerLabel", () => {
+  it("uses the display name, trimmed", () => {
+    expect(reviewerLabel("  Maria ")).toBe("Maria");
+  });
+
+  it("falls back for a missing or blank name", () => {
+    expect(reviewerLabel(null)).toBe("Anonymous student");
+    expect(reviewerLabel("   ")).toBe("Anonymous student");
+  });
+});
 
 describe("formatReviewDate", () => {
   it("formats a timestamp as a short date", () => {

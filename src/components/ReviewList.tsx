@@ -1,9 +1,9 @@
-import { formatReviewDate, ratingStars } from "@/lib/review-display";
+import { formatReviewDate, ratingStars, reviewerLabel } from "@/lib/review-display";
 import { MAX_RATING } from "@/lib/review-validation";
-import type { Review } from "@/types/review";
+import type { ReviewWithAuthor } from "@/types/review";
 
 // Every review for one listing, in the order given (the page passes newest first).
-export function ReviewList({ reviews }: { reviews: Review[] }) {
+export function ReviewList({ reviews }: { reviews: ReviewWithAuthor[] }) {
   if (reviews.length === 0) {
     return (
       <p className="mt-2 text-sm text-zinc-500">
@@ -28,6 +28,12 @@ export function ReviewList({ reviews }: { reviews: Review[] }) {
               {formatReviewDate(review.created_at)}
             </time>
           </div>
+          {/* undefined means names couldn't be loaded, so leave the line out rather than guess. */}
+          {review.reviewer_name !== undefined && (
+            <p className="mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-50">
+              {reviewerLabel(review.reviewer_name)}
+            </p>
+          )}
           {/* whitespace-pre-line keeps the reviewer's line breaks. */}
           <p className="mt-2 text-sm whitespace-pre-line text-zinc-800 dark:text-zinc-200">
             {review.comment}

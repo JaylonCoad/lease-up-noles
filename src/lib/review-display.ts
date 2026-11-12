@@ -20,6 +20,13 @@ export function ratingStars(rating: number): string {
   return "★".repeat(filled) + "☆".repeat(MAX_RATING - filled);
 }
 
+// The author line on a review. Display names are optional at sign-up, so blank ones get a
+// neutral label instead of an empty space.
+export function reviewerLabel(displayName: string | null): string {
+  const name = displayName?.trim() ?? "";
+  return name === "" ? "Anonymous student" : name;
+}
+
 // "1 review" / "3 reviews".
 export function reviewCountLabel(count: number): string {
   return `${count} ${count === 1 ? "review" : "reviews"}`;
