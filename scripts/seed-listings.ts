@@ -20,6 +20,10 @@
  *    here because it bypasses Row-Level Security, which blocks writes from
  *    the publishable key.
  * 3. Run with: npx tsx scripts/seed-listings.ts
+ *
+ * It also creates a few fictional students and ~14 sample reviews (see seed-reviews-data.ts).
+ * Run the review submission migration (20261110120000) first: the review step relies on its
+ * unique (listing, user) constraint to stay re-runnable.
  */
 
    import { config } from "dotenv";
@@ -27,6 +31,8 @@
    
    import { createClient } from "@supabase/supabase-js";
    import WebSocket from "ws";
+
+import { seedReviews, seedStudents } from "./seed-reviews-data";
    
    // @supabase/supabase-js initializes a Realtime client by default, which requires
    // the native WebSocket global available in Node 22+. This script doesn't use
@@ -172,7 +178,97 @@ async function seed() {
     inserted += 1;
   }
 
-  console.log(`Seed complete. ${inserted} listings inserted, ${skipped} already existed and were skipped.`);
+  console.log(`Listings done. ${inserted} inserted, ${skipped} already existed and were skipped.`);
 }
 
-seed();
+// ---------------------------------------------------------------------------
+// SEED REVIEWS
+// ---------------------------------------------------------------------------
+// reviews.user_id must point at a real profile, and a profile only exists for a real auth user.
+// So we first create a few fictional students (an auth user each; the database trigger then
+// makes their profile), then add their reviews. Both steps are safe to re-run:
+//  - an existing student is reused instead of created again
+//  - the unique (listing, user) constraint plus ignoreDuplicates skips reviews already added
+
+// Returns a map of email -> user id for every seed student, creating the missing ones.
+async function ensureSeedStudents(): Promise<Map<string, string>> {
+  const ids = new Map<string, string>();
+  const wanted = new Set(seedStudents.map((student) => student.email));
+
+  // Find students that already exist (one page of up to 1000 users is plenty for this project).
+  const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  });
+  if (listError) throw new Error(`Could not list users: ${listError.message}`);
+  for (const user of existingUsers.users) {
+    if (user.email && wanted.has(user.email)) ids.set(user.email, user.id);
+  }
+
+  let created = 0;
+  for (const student of seedStudents) {
+    if (ids.has(student.email)) continue;
+
+    const { data, error } = await supabase.auth.admin.createUser({
+      email: student.email,
+      // Nobody should log in as a seed student, so the password is random and thrown away.
+      password: crypto.randomUUID() + crypto.randomUUID(),
+      email_confirm: true,
+      user_metadata: { display_name: student.displayName },
+    });
+    if (error || !data.user) {
+      throw new Error(`Could not create seed student ${student.email}: ${error?.message}`);
+    }
+    ids.set(student.email, data.user.id);
+    created += 1;
+  }
+
+  console.log(`Seed students ready. ${created} created, ${ids.size - created} already existed.`);
+  return ids;
+}
+
+async function seedReviewRows() {
+  const studentIds = await ensureSeedStudents();
+
+  const { data: listings, error: listingError } = await supabase.from("listings").select("id, name");
+  if (listingError) throw new Error(`Could not load listings: ${listingError.message}`);
+  const listingIds = new Map((listings ?? []).map((row) => [row.name as string, row.id as string]));
+
+  const rows = [];
+  for (const review of seedReviews) {
+    const listingId = listingIds.get(review.listingName);
+    const userId = studentIds.get(review.studentEmail);
+    if (!listingId || !userId) {
+      console.error(`Skipping a review: unknown listing "${review.listingName}" or student.`);
+      continue;
+    }
+    rows.push({
+      listing_id: listingId,
+      user_id: userId,
+      rating: review.rating,
+      comment: review.comment,
+      created_at: new Date(Date.now() - review.daysAgo * 24 * 60 * 60 * 1000).toISOString(),
+    });
+  }
+
+  // ignoreDuplicates relies on the unique (listing_id, user_id) constraint from the review
+  // submission migration, so run that migration first.
+  const { data: inserted, error: insertError } = await supabase
+    .from("reviews")
+    .upsert(rows, { onConflict: "listing_id,user_id", ignoreDuplicates: true })
+    .select("id");
+  if (insertError) throw new Error(`Could not insert reviews: ${insertError.message}`);
+
+  const added = inserted?.length ?? 0;
+  console.log(`Reviews done. ${added} inserted, ${rows.length - added} already existed and were skipped.`);
+}
+
+async function main() {
+  await seed();
+  await seedReviewRows();
+}
+
+main().catch((error) => {
+  console.error(error instanceof Error ? error.message : error);
+  process.exit(1);
+});
